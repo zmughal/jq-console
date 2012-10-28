@@ -1,1 +1,0 @@
-curl -X POST --data-urlencode content@README.md --data-urlencode name=jq-console --data-urlencode twitter[]=amjad_masad --data-urlencode twitter[]=replit http://documentup.com/compiled > index.html
