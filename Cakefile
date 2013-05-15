@@ -14,3 +14,8 @@ task 'build', 'Build minified file with uglify', ->
       console.error 'failed with', err
     else
       console.log 'build complete'
+  exec 'uglifyjs -o hpconsole.min.js lib/hpconsole.js', (err, res)->
+    if err
+      console.error 'failed with', err
+    else
+      console.log 'build complete'
