@@ -2,7 +2,7 @@
 
 task 'watch', 'Build and watch the CoffeeScript source files', ->
   #coffee = spawn 'coffee', ['-cw', '-o', 'lib', 'src']
-  coffee = spawn 'coffee', ['-cw', '-j', '-o', 'hpconsole.js', 'src']
+  coffee = spawn 'coffee', ['-cw', '-j', 'lib/hpconsole.js', 'src']
   test   = spawn 'coffee', ['-cw', 'test']
   log = (d)-> console.log d.toString()
   coffee.stdout.on 'data', log
