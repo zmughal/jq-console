@@ -8,5 +8,5 @@ class HPConsole extends JQConsole
 $.fn.hpconsole = (header, prompt_main, prompt_continue) ->
   new HPConsole this, header, prompt_main, prompt_continue
 
-$.fn.hqconsole.HPConsole = HPConsole
-$.fn.hqconsole.Ansi = Ansi
+$.fn.hpconsole.HPConsole = HPConsole
+$.fn.hpconsole.Ansi = Ansi
