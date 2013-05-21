@@ -44,15 +44,35 @@ class HPConsole extends JQConsole
           # default keys c.f. <http://stackoverflow.com/questions/7295508/javascript-capture-browser-shortcuts-ctrlt-n-w>
           if key of @shortcuts
             event.preventDefault()
-    else if key == KEY_TAB
-      if event.shiftKey
-        if @is_completion
-          SelectPreviousCompletion()
-      else
-        if @is_completion
-          SelectNextCompletion()
+    if key == KEY_TAB
+      if event.shiftKey # shift-tab
+        if @$is_completion
+          event.preventDefault()
+          @SelectPreviousCompletion()
+          return
+        else # de-indent as before
+          super
+          return
+      else # tab
+        if @$is_completion
+          # already completing, so it should select the next item in the list
+          event.preventDefault()
+          @SelectNextCompletion()
+          return
         else
-          Complete()
+          event.preventDefault()
+          if @ShouldIndent()
+            super
+          else
+            @Complete()
+          return
+    else if key == KEY_BACKSPACE
+      if @ShouldDeindent()
+        @_Unindent()
+        return
+      else
+        super
+        return
     super
 
   SelectPreviousCompletion: ->
@@ -80,6 +100,23 @@ class HPConsole extends JQConsole
   EndCompletion: ->
     @in_composition = false
     return
+
+  # This is used to determine whether we should indent or use completion
+  #
+  # if there is just white-space (or nothing) on the left, we can tab over
+  # otherwise we use completion
+  ShouldIndent: ->
+    @$prompt_left.text().match(/^\s*$/)
+
+  # This is used to determine if we should de-indent on a backspace on
+  # white-space on the left
+  #
+  # the whitespace must be a multiple of the DEFAULT_INDENT_WIDTH
+  ShouldDeindent: ->
+    @$prompt_left.text().length > 0 \
+      and @$prompt_left.text().match(/^\s*$/) \
+      and ( @$prompt_left.text().length % DEFAULT_INDENT_WIDTH ) == 0
+
 
 $.fn.hpconsole = (header, prompt_main, prompt_continue) ->
   new HPConsole this, header, prompt_main, prompt_continue
