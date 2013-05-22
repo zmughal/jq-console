@@ -12,7 +12,7 @@ class HPConsole extends JQConsole
     # callback used to retrieve data for completion
     @completion_callback = null
     # boolean to determine whether completion is currently open
-    @is_completion = false
+    @$is_completion = false
 
   Reset: ->
     @completion_callback = null
@@ -41,7 +41,8 @@ class HPConsole extends JQConsole
     if event.ctrlKey
       switch key
         when KEY_T, KEY_W, KEY_N, KEY_P
-          # default keys c.f. <http://stackoverflow.com/questions/7295508/javascript-capture-browser-shortcuts-ctrlt-n-w>
+          # default keys
+          # c.f. <http://stackoverflow.com/questions/7295508/javascript-capture-browser-shortcuts-ctrlt-n-w>
           if key of @shortcuts
             event.preventDefault()
     if key == KEY_TAB
@@ -86,19 +87,48 @@ class HPConsole extends JQConsole
   SetCompletionCallback: (completion_callback) ->
     @completion_callback = completion_callback
 
+  # adds the completion input field as hidden element
+  # after the prompt
+  SetupCompletion: (results) ->
+    @$prompt_completion_mark = $('<span id="prompt-completion-marker" style="position: relative"></span>').appendTo @$prompt_left
+    pm_input_html = '<input type="text" id="prompt-completion-input" />'
+    @$prompt_completion_input = $(pm_input_html)
+    @$prompt_completion_input.autocomplete
+      source: (request, response) ->
+        response( $.grep( results, (item, item_ndx) ->
+          return item.indexOf(request.term) == 0 ) )
+      appendTo: '#prompt-completion-overlay'
+      position: { of: "#prompt-completion-marker" }
+      minLength: 0
+    @$prompt_completion_input.val ''
+    @$prompt_completion_input.autocomplete 'search'
+    $("#prompt-completion-overlay > ul").css
+      top: @$prompt_completion_mark.offset().top + "px"
+      left: @$prompt_completion_mark.offset().left + "px"
+    # TODO EndCompletion when the marker element is removed, backspace
+
+  # remove the completion input field
+  BreakdownCompletion: ->
+    return
+
   Complete: ->
-    @is_completion = true
-    text = @$prompt_left.text()
-    # TODO retrieve results
-    @completion_callback text
+    @$is_completion = true
+    text = @$prompt_left.text() # this is not right (i.e. correct), but it is left
+    # --- need to use GetPromptText(), GetLine(), GetColumn()
+    completion_results = @completion_callback(text) # returns array of results
+    if completion_results.length
+      @SetupCompletion completion_results
 
   # Insert text and end the completion mode
   InsertCompletion: (text) ->
     @_AppendPromptText text
     EndCompletion()
 
+  # append contents of completion field to @prompt_left
+  # and then remove all changes to the prompt
   EndCompletion: ->
-    @in_composition = false
+    @$is_completion = false
+    @BreakdownCompletion()
     return
 
   # This is used to determine whether we should indent or use completion
