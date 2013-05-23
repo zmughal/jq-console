@@ -5,6 +5,11 @@ KEY_N = parseInt 'N'
 KEY_P = parseInt 'P'
 KEY_T = parseInt 'T'
 KEY_W = parseInt 'W'
+KEY_U = parseInt 'U'
+KEY_ESC = 27
+
+PROMPT_MARKER_ID = 'prompt-completion-marker'
+PROMPT_INPUT_ID = 'prompt-completion-input'
 
 class HPConsole extends JQConsole
   constructor: (@container, header, prompt_label, prompt_continue_label) ->
@@ -16,7 +21,7 @@ class HPConsole extends JQConsole
 
   Reset: ->
     @completion_callback = null
-    EndCompletion()
+    @EndCompletion()
     return super
 
   # Delete to beginning of line
@@ -39,12 +44,10 @@ class HPConsole extends JQConsole
   _HandleKey: (event) =>
     key = event.keyCode or event.which
     if event.ctrlKey
-      switch key
-        when KEY_T, KEY_W, KEY_N, KEY_P
-          # default keys
-          # c.f. <http://stackoverflow.com/questions/7295508/javascript-capture-browser-shortcuts-ctrlt-n-w>
-          if key of @shortcuts
-            event.preventDefault()
+      ## prevent browser default keys
+      ## c.f. <http://stackoverflow.com/questions/7295508/javascript-capture-browser-shortcuts-ctrlt-n-w>
+      if key of @shortcuts
+        event.preventDefault()
     if key == KEY_TAB
       if event.shiftKey # shift-tab
         if @$is_completion
@@ -70,59 +73,131 @@ class HPConsole extends JQConsole
     else if key == KEY_BACKSPACE
       if @ShouldDeindent()
         @_Unindent()
-        return
       else
         super
+      if @$is_completion
+        @UpdateCompletionMenu()
+      return
+    else if key == KEY_ESC
+      if @$is_completion
+        @EndCompletion()
+        return
+    else if key == KEY_ENTER
+      if @$is_completion
+        @AcceptCompletion()
         return
     super
+    if @$is_completion
+      @UpdateCompletionMenu()
+
+  _HandleChar: (event) =>
+    super
+    if @$is_completion
+      @UpdateCompletionMenu()
+
+  AcceptCompletion: ->
+    current_text = @GetCompletionItemSelected()
+    @$prompt_left.text( @$prompt_left.text().substring(0, @$completion_start_idx) )
+    @_AppendPromptText(current_text)
+    @EndCompletion()
+
+  GetCompletionItemSelected:  ->
+    items = @GetCompletionItems()
+    if @$prompt_current_idx >= 0 && @$prompt_current_idx < items.length
+      return $(items[@$prompt_current_idx]).text()
+    return ''
+
+  GetCompletionItems: ->
+    $(@$prompt_completion_input.autocomplete("widget").find("a"))
 
   SelectPreviousCompletion: ->
-    return
+    items = @GetCompletionItems()
+    if @$prompt_current_idx == -1 # in the initial state, this will go to end
+      @$prompt_current_idx = items.length
+    if @$prompt_current_idx > 0
+      @$prompt_current_idx--
+    else
+      @$prompt_current_idx = items.length - 1
+    @SelectNthCompletion(@$prompt_current_idx)
 
   SelectNextCompletion: ->
-    return
+    items = @GetCompletionItems()
+    # in the initial state, this will go to item 0
+    if @$prompt_current_idx < items.length - 1
+      @$prompt_current_idx++
+    else # if at end, loop to beginning
+      @$prompt_current_idx = 0
+    @SelectNthCompletion(@$prompt_current_idx)
 
-  # TODO completion callback
-  # need to pass in: text to left
+  SelectNthCompletion: (n) ->
+    items = @GetCompletionItems()
+    items.removeClass("ui-state-focus")
+    $(items[n]).addClass("ui-state-focus")
+
+  UpdateCompletionMenu: ->
+    if @$prompt_left.text().length < @$completion_start_idx
+      @EndCompletion()
+      return
+    @$prompt_completion_input.val(@$prompt_left.text().substring(@$completion_start_idx))
+    @$prompt_completion_input.autocomplete 'search'
+
+  # completion callback
+  # function(text, response_callback )
+  #
+  # - text is string of the text to the left of the cursor
+  # - response_callback is a function that takes an array of completion items
+  #   as its only parameter
   SetCompletionCallback: (completion_callback) ->
     @completion_callback = completion_callback
 
   # adds the completion input field as hidden element
   # after the prompt
   SetupCompletion: (results) ->
-    @$prompt_completion_mark = $('<span id="prompt-completion-marker" style="position: relative"></span>').appendTo @$prompt_left
-    pm_input_html = '<input type="text" id="prompt-completion-input" />'
-    @$prompt_completion_input = $(pm_input_html)
+    # used to mark position of completion menu to the left of the cursor
+    @$prompt_completion_mark = $('<span id=' + '"' + PROMPT_MARKER_ID + '"' +
+      'style="position: relative"></span>').appendTo @$prompt_left
+    # input field that the autocomplete menu is attached to
+    pm_input_html = '<input type="text" id=' + '"' + PROMPT_INPUT_ID + '"' + ' />'
+    @$prompt_completion_input = $(pm_input_html)# .appendTo( @$prompt_current )
+    @$prompt_completion_input.css
+      display: 'none'
+    @$prompt_current_idx = -1 # the current selected index in the menu
+
     @$prompt_completion_input.autocomplete
-      source: (request, response) ->
+      source: (request, response) -> 
         response( $.grep( results, (item, item_ndx) ->
+          # match the items in the list that start with the input text
           return item.indexOf(request.term) == 0 ) )
-      appendTo: '#prompt-completion-overlay'
-      position: { of: "#prompt-completion-marker" }
+      position: { of: "#" + PROMPT_MARKER_ID }
       minLength: 0
+
     @$prompt_completion_input.val ''
+    # activate menu immediately
     @$prompt_completion_input.autocomplete 'search'
-    $("#prompt-completion-overlay > ul").css
-      top: @$prompt_completion_mark.offset().top + "px"
-      left: @$prompt_completion_mark.offset().left + "px"
-    # TODO EndCompletion when the marker element is removed, backspace
+
+    # the text location where the completion started
+    @$completion_start_idx = @$prompt_left.text().length
 
   # remove the completion input field
   BreakdownCompletion: ->
+    @$prompt_completion_mark.remove()
+    @$prompt_completion_input.remove()
+    @$completion_start_idx = -1
     return
 
   Complete: ->
     @$is_completion = true
     text = @$prompt_left.text() # this is not right (i.e. correct), but it is left
-    # --- need to use GetPromptText(), GetLine(), GetColumn()
-    completion_results = @completion_callback(text) # returns array of results
-    if completion_results.length
-      @SetupCompletion completion_results
+    # --- need to use @GetPromptText(), @GetLine(), @GetColumn()
+    # get array of results
+    @completion_callback text, (completion_results) =>
+      if completion_results.length
+        @SetupCompletion completion_results
 
   # Insert text and end the completion mode
   InsertCompletion: (text) ->
     @_AppendPromptText text
-    EndCompletion()
+    @EndCompletion()
 
   # append contents of completion field to @prompt_left
   # and then remove all changes to the prompt
