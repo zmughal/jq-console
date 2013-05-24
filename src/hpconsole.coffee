@@ -18,6 +18,7 @@ class HPConsole extends JQConsole
     @completion_callback = null
     # boolean to determine whether completion is currently open
     @$is_completion = false
+    @$is_completion_can_end = false
 
   Reset: ->
     @completion_callback = null
@@ -61,7 +62,12 @@ class HPConsole extends JQConsole
         if @$is_completion
           # already completing, so it should select the next item in the list
           event.preventDefault()
-          @SelectNextCompletion()
+          if @$is_completion_can_end
+            # start another completion
+            @EndCompletion()
+            @Complete()
+          else
+            @SelectNextCompletion()
           return
         else
           event.preventDefault()
@@ -172,10 +178,13 @@ class HPConsole extends JQConsole
     @$prompt_current_idx = -1 # the current selected index in the menu
 
     @$prompt_completion_input.autocomplete
-      source: (request, response) ->
-        response( $.grep( results, (item, item_ndx) ->
+      source: (request, response) =>
+        matches =  $.grep results, (item, item_ndx) ->
           # match the items in the list that start with the input text
-          return item.indexOf(request.term) == 0 ) )
+          return item.indexOf(request.term) == 0
+        if matches.length == 0
+          @$is_completion_can_end = true
+        response(matches)
       position: { of: "#" + PROMPT_MARKER_ID }
       minLength: 0
 
@@ -208,7 +217,7 @@ class HPConsole extends JQConsole
       if completion_results.length
         @SetupCompletion completion_results
       else
-        @EndCompletion
+        @EndCompletion()
 
   # Insert text and end the completion mode
   InsertCompletion: (text) ->
@@ -219,6 +228,7 @@ class HPConsole extends JQConsole
   # and then remove all changes to the prompt
   EndCompletion: ->
     @$is_completion = false
+    @$is_completion_can_end = false
     @BreakdownCompletion()
     return
 
