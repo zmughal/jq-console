@@ -138,7 +138,7 @@ class HPConsole extends JQConsole
     if @$prompt_left.text().length < @$completion_start_idx or @$prompt_left.text().length == 0
       @EndCompletion()
       return
-    @$prompt_completion_input.val(@$prompt_left.text().substring(@$completion_start_idx))
+    @$prompt_completion_input.val(@$prompt_left.text().substring(@$completion_start_idx - @$completion_prefix_idx))
     @$prompt_completion_input.autocomplete 'search'
 
   # completion callback
