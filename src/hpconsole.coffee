@@ -163,8 +163,6 @@ class HPConsole extends JQConsole
     match = orig_text.match /\b([A-Za-z0-9_:]*)$/
     text_before_space = orig_text.substr(0, match.index)
     text_after_space = orig_text.substr(match.index)
-    console.log(text_before_space)
-    console.log(text_after_space)
     @$prompt_left.text(text_before_space)
     # Used to mark position of completion menu to the left of the cursor.
     # It needs to before the last word boundary.
