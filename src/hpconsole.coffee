@@ -160,7 +160,7 @@ class HPConsole extends JQConsole
   # after the prompt
   SetupCompletion: (results) ->
     orig_text = @$prompt_left.text()
-    match = orig_text.match /\b([A-Za-z0-9:]*)$/
+    match = orig_text.match /\b([A-Za-z0-9_:]*)$/
     text_before_space = orig_text.substr(0, match.index)
     text_after_space = orig_text.substr(match.index)
     console.log(text_before_space)
