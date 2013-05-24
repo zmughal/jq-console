@@ -98,7 +98,7 @@ class HPConsole extends JQConsole
   AcceptCompletion: ->
     current_text = @GetCompletionItemSelected()
     @$prompt_left.text( @$prompt_left.text().substring(0, @$completion_start_idx) )
-    @_AppendPromptText(current_text)
+    @_AppendPromptText(current_text.substring(@$completion_prefix_idx))
     @EndCompletion()
 
   GetCompletionItemSelected:  ->
@@ -135,7 +135,7 @@ class HPConsole extends JQConsole
     $(items[n]).addClass("ui-state-focus")
 
   UpdateCompletionMenu: ->
-    if @$prompt_left.text().length < @$completion_start_idx
+    if @$prompt_left.text().length < @$completion_start_idx or @$prompt_left.text().length == 0
       @EndCompletion()
       return
     @$prompt_completion_input.val(@$prompt_left.text().substring(@$completion_start_idx))
@@ -153,7 +153,15 @@ class HPConsole extends JQConsole
   # adds the completion input field as hidden element
   # after the prompt
   SetupCompletion: (results) ->
-    # used to mark position of completion menu to the left of the cursor
+    orig_text = @$prompt_left.text()
+    match = orig_text.match /\b([A-Za-z0-9:]*)$/
+    text_before_space = orig_text.substr(0, match.index)
+    text_after_space = orig_text.substr(match.index)
+    console.log(text_before_space)
+    console.log(text_after_space)
+    @$prompt_left.text(text_before_space)
+    # Used to mark position of completion menu to the left of the cursor.
+    # It needs to before the last word boundary.
     @$prompt_completion_mark = $('<span id=' + '"' + PROMPT_MARKER_ID + '"' +
       'style="position: relative"></span>').appendTo @$prompt_left
     # input field that the autocomplete menu is attached to
@@ -164,7 +172,7 @@ class HPConsole extends JQConsole
     @$prompt_current_idx = -1 # the current selected index in the menu
 
     @$prompt_completion_input.autocomplete
-      source: (request, response) -> 
+      source: (request, response) ->
         response( $.grep( results, (item, item_ndx) ->
           # match the items in the list that start with the input text
           return item.indexOf(request.term) == 0 ) )
@@ -172,11 +180,17 @@ class HPConsole extends JQConsole
       minLength: 0
 
     @$prompt_completion_input.val ''
-    # activate menu immediately
+    # activate menu immediately (for positioning)
     @$prompt_completion_input.autocomplete 'search'
+    @$prompt_completion_input.autocomplete 'close'
+    @$prompt_completion_input.autocomplete 'search'
+
+    @$prompt_completion_input.val text_after_space
+    @$prompt_left.text(orig_text)
 
     # the text location where the completion started
     @$completion_start_idx = @$prompt_left.text().length
+    @$completion_prefix_idx = text_after_space.length
 
   # remove the completion input field
   BreakdownCompletion: ->
@@ -193,6 +207,8 @@ class HPConsole extends JQConsole
     @completion_callback text, (completion_results) =>
       if completion_results.length
         @SetupCompletion completion_results
+      else
+        @EndCompletion
 
   # Insert text and end the completion mode
   InsertCompletion: (text) ->
