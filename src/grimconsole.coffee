@@ -248,7 +248,7 @@ class GrimConsole extends JQConsole
 
 
 $.fn.grimconsole = (header, prompt_main, prompt_continue) ->
-  new grimConsole this, header, prompt_main, prompt_continue
+  new GrimConsole this, header, prompt_main, prompt_continue
 
 $.fn.grimconsole.GrimConsole = GrimConsole
 $.fn.grimconsole.Ansi = Ansi
