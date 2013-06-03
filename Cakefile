@@ -2,7 +2,7 @@
 
 task 'watch', 'Build and watch the CoffeeScript source files', ->
   #coffee = spawn 'coffee', ['-cw', '-o', 'lib', 'src']
-  coffee = spawn 'coffee', ['-cw', '-j', 'lib/hpconsole.js', 'src/jqconsole.coffee', 'src/hpconsole.coffee']
+  coffee = spawn 'coffee', ['-cw', '-j', 'lib/grimconsole.js', 'src/jqconsole.coffee', 'src/grimconsole.coffee']
   test   = spawn 'coffee', ['-cw', 'test']
   log = (d)-> console.log d.toString()
   coffee.stdout.on 'data', log
@@ -17,7 +17,7 @@ task 'build', 'Build minified file with uglify', ->
     else
       console.log 'build complete'
   ###
-  exec 'uglifyjs -o hpconsole.min.js lib/hpconsole.js', (err, res)->
+  exec 'uglifyjs -o grimconsole.min.js lib/grimconsole.js', (err, res)->
     if err
       console.error 'failed with', err
     else

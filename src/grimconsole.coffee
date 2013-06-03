@@ -11,9 +11,9 @@ KEY_ESC = 27
 PROMPT_MARKER_ID = 'prompt-completion-marker'
 PROMPT_INPUT_ID = 'prompt-completion-input'
 
-class HPConsole extends JQConsole
+class GrimConsole extends JQConsole
   constructor: (@container, header, prompt_label, prompt_continue_label) ->
-    super(@container, "Welcome to HotPie\n", "HP> ", ".")
+    super(@container, "Welcome to Grimoire\n", "grim> ", ".")
     # callback used to retrieve data for completion
     @completion_callback = null
     # boolean to determine whether completion is currently open
@@ -247,8 +247,8 @@ class HPConsole extends JQConsole
       and ( @$prompt_left.text().length % DEFAULT_INDENT_WIDTH ) == 0
 
 
-$.fn.hpconsole = (header, prompt_main, prompt_continue) ->
-  new HPConsole this, header, prompt_main, prompt_continue
+$.fn.grimconsole = (header, prompt_main, prompt_continue) ->
+  new grimConsole this, header, prompt_main, prompt_continue
 
-$.fn.hpconsole.HPConsole = HPConsole
-$.fn.hpconsole.Ansi = Ansi
+$.fn.grimconsole.GrimConsole = GrimConsole
+$.fn.grimconsole.Ansi = Ansi
